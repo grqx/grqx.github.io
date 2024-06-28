@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript Error Example</title>
+    <!-- <link rel="stylesheet" type="text/css" href="https://zenithwzj.github.io/Pages-test/jsErrorTest/select.css"> -->
+    <link rel="stylesheet" type="text/css" href="https://zenithwzj.github.io/Pages-test/jsErrorTest/select2.css">
+    <link rel="stylesheet" type="text/css"
+        href="https://zenithwzj.github.io/Pages-test/jsErrorTest/clearlogsbutton.css">
+    <link rel="stylesheet" type="text/css" href="https://zenithwzj.github.io/Pages-test/jsErrorTest/submitButton.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #333;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #fff;
+        }
+
+        #logContainer {
+            text-align: left;
+            width: 80%;
+            max-width: 800px;
+            background-color: #000;
+            border: 1px solid #444;
+            padding: 10px;
+            margin-top: 20px;
+            font-family: Consolas, monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            height: 300px;
+        }
+
+        .multiline-input {
+            text-align: left;
+            width: 80%;
+            max-width: 800px;
+            background-color: rgb(59, 59, 59);
+            border: 1px solid #444;
+            padding: 10px;
+            margin-top: 20px;
+            color: white;
+            font-family: Consolas, monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            height: 84px;
+            min-height: 100px;
+        }
+
+        .multiline-input:focus {
+            outline: 0px solid #4444;
+            outline-offset: 0px;
+        }
+
+        .selectdiv {
+            display: inline-block;
+            position: relative;
+            /*demo styling*/
+            /* float: left; */
+            /* min-width: 200px; */
+            /* margin: 50px 33%; */
+        }
+
+        .debug {
+            color: #bbb;
+        }
+
+        .info {
+            color: white;
+        }
+
+        .error {
+            color: red;
+        }
+
+        .warning {
+            color: yellow;
+        }
+
+        .timestamp {
+            color: #888;
+            margin-right: 10px;
+        }
+
+        .timestampDiv {
+            display: block;
+            margin-bottom: 0.3%;
+        }
+
+        /* .custom-select {
+            font-family: "Source Sans Pro", sans-serif;
+            font-size: 1.6rem;
+        } */
+        pre,
+        code {
+            background-color: #444444;
+            color: #FFFFFF;
+            font-family: Consolas, monospace;
+            font-size: 12px;
+            padding: 3px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+    </style>
+    <style id="clearIntervalCode_hover">
+        #clearIntervalCode:hover {
+            text-decoration: underline;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>This page throws a JS error every 5000 miliseconds</h1>
+    <p>Please don't use console in browser DevTools, please use the console below.</p>
+    <p>If you don't want the webpage to throw JS errors regularly, you can run
+        <code onclick="copyCode()" id="clearIntervalCode" alt="clear interval code, click to run.">clearInterval(<undefined id="intervalValue"></undefined>);</code> (You can run it by simply clicking on the code block).</p>
+    <div class="selectdiv loglevelselectDiv">
+        <label for="loglevel">Log Level:</label>
+        <select id="loglevel" class="select2">
+            <option value="debug">Debug</option>
+            <option value="info" selected>Info</option>
+            <option value="warning">Warning</option>
+            <option value="error">Error</option>
+        </select>
+    </div>
+    <div class="timestampDiv">
+        <label class="timestampLabel" for="TimeStampCheckbox">Show Log Timestamps</label>
+        <input class="timestampBtn" type="checkbox" id="TimeStampCheckbox" value="showTimeStamp" checked>
+    </div>
+    <h3>JS log box</h3>
+    <div class="ButtonsContainer">
+        <button id="clearButton" class="clearLogsButton">Clear Logs</button>
+    </div>
+
+    <div id="logContainer"></div>
+
+    <label for="consoleInput">Console Input</label>
+    <textarea class="multiline-input" spellcheck="false" id="consoleInput"
+        placeholder="Console command, multi-line supported, press ctrl+Enter or click on the button below to run">console.error("EXAMPLE error");</textarea>
+    <button id="submitBtn" class="submitButton">Run Command</button>
+    <script>
+        const logLevelSelect = document.getElementById('loglevel');
+        const showTimestampCheckbox = document.getElementById('TimeStampCheckbox');
+        const logContainer = document.getElementById('logContainer');
+        const consoleInput = document.getElementById('consoleInput');
+        const clearButton = document.getElementById('clearButton');
+        const submitButton = document.getElementById('submitBtn');
+        const btnsContainer = document.getElementsByClassName("ButtonsContainer");
+        var setIntervalCleared = false;
+
+        function getTimestamp() {
+            const now = new Date();
+            return now.toTimeString().split(' ')[0]; // Format like 19:38:25
+        }
+
+        function getMsgDisplayStyle(logTypeString, logLevelString) {
+            const logTypeMap = {
+                'debug': 0,
+                'info': 1,
+                'warning': 2,
+                'error': 3,
+            };
+            const logLevel = logTypeMap[logLevelString];
+            const logType = logTypeMap[logTypeString];
+            return logType >= logLevel ? '' : 'none';
+        }
+
+        function logMessage(message, type = 'Log') {
+            const messageString = '[' + capitalizeFirstLetter(type) + '] ' + message;
+            const messageElement = document.createElement('div');
+            messageElement.className = type.toLowerCase();
+            const timestampElement = document.createElement('span');
+            timestampElement.className = 'timestamp';
+            timestampElement.textContent = getTimestamp();
+            timestampElement.style.display = showTimestampCheckbox.checked ? '' : 'none';
+            messageElement.appendChild(timestampElement);
+            messageElement.appendChild(document.createTextNode(messageString));
+            messageElement.style.display = getMsgDisplayStyle(type.toLowerCase(), logLevelSelect.value);
+            logContainer.appendChild(messageElement);
+            logContainer.scrollTop = logContainer.scrollHeight; // Auto-scroll to the bottom
+        }
+
+        function throwError() {
+            console.log('Throwing an error now...');
+            throw new Error('This is a deliberate error.');
+        }
+
+        function capitalizeFirstLetter(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+
+        function changePastLogLevel(logLevelString) {
+            const allElements = document.querySelectorAll("#logContainer > div");
+            allElements.forEach(commonElement => {
+                commonElement.style.display = getMsgDisplayStyle(commonElement.className, logLevelString);
+            });
+        }
+
+        function changePastTimestamps(show) {
+            const timestampElements = document.querySelectorAll(".timestamp");
+            timestampElements.forEach(timestampElement => {
+                timestampElement.style.display = show ? '' : 'none';
+            });
+        }
+
+        function Override_Logger() {
+            // Override console.log, console.error, and console.warn to display on the page
+            const originalDebug = console.debug;
+            const originalLog = console.log;
+            const originalError = console.error;
+            const originalWarn = console.warn;
+
+            console.debug = (message) => {
+                originalDebug(message);
+                logMessage(message, 'Debug')
+            }
+            console.log = (message) => {
+                originalLog(message);
+                logMessage(message, 'Info');
+            };
+            console.error = (message) => {
+                originalError(message);
+                logMessage(message, 'Error');
+            };
+            console.warn = (message) => {
+                originalWarn(message);
+                logMessage(message, 'Warning');
+            };
+        }
+
+        function runJScmd(cmdString) {
+            const scriptElement = document.createElement('script');
+            scriptElement.innerHTML = cmdString;
+            document.head.appendChild(scriptElement);
+            document.head.removeChild(scriptElement);
+        }
+        
+        function copyCode() {
+            let texta = document.getElementById('clearIntervalCode').innerText;
+            // const copyContent = async () => {
+            //     try {
+            //     await navigator.clipboard.writeText(texta);
+            //     console.log('Content copied to clipboard');
+            //     } catch (err) {
+            //     console.error('Failed to copy: ', err);
+            //     }
+            // }
+            // copyContent();
+            if(!setIntervalCleared) {
+                console.debug("Executing command: " + texta);
+                runJScmd(texta);
+                setIntervalCleared = true;
+                document.getElementById('clearIntervalCode').style.textDecoration = 'none';
+                const css_underline_style = document.getElementById('clearIntervalCode_hover');
+                if (css_underline_style) {
+                    css_underline_style.parentNode.removeChild(css_underline_style);
+                }
+            }
+        }
+
+
+        if (new URLSearchParams(window.location.search).get("fuckLRC") == 'true') {
+            window.location.replace("https://zenithwzj.github.io/Pages-test/forLRC/");
+        }
+
+        Override_Logger();
+
+        clearButton.addEventListener('click', (event) => {
+            logContainer.innerHTML = '';
+        });
+
+        showTimestampCheckbox.addEventListener('change', (event) => {
+            console.debug(event.target.checked ? "Enabled timestamps" : "Disabled timestamps");
+            changePastTimestamps(event.target.checked);
+        });
+
+        logLevelSelect.addEventListener('change', (event) => {
+            console.debug("Log level changed to " + event.target.value)
+            changePastLogLevel(event.target.value);
+        });
+
+        consoleInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && event.ctrlKey) {
+                console.debug("Executing command: " + consoleInput.value);
+                runJScmd(consoleInput.value);
+                consoleInput.value = '';
+            }
+        });
+
+        submitButton.addEventListener('click', (event) => {
+            console.debug("Executing command: " + consoleInput.value);
+            runJScmd(consoleInput.value);
+            consoleInput.value = '';
+        });
+
+        window.addEventListener('error', function (e) {
+            logMessage(e.error.message, 'Error');
+            return false;
+        });
+
+
+        // Set interval to throw error every 5 seconds (5000 milliseconds)
+        const intervalID_throwError = setInterval(throwError, 5000);
+        console.debug("IntervalID for throwError: " + intervalID_throwError.toString());
+        console.log("Initial Info example");
+        console.warn("Initial Warning example");
+        console.error("Initial Error example");
+        console.debug("Initial Debug example");
+
+
+        const codeHint = document.getElementById("intervalValue");
+        codeHint.appendChild(document.createTextNode(intervalID_throwError.toString()));
+    </script>
+</body>
+
+</html>
